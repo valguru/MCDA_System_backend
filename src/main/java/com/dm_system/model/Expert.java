@@ -2,7 +2,8 @@ package com.dm_system.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Set;
+
+import java.util.List;
 
 @Data
 @Entity
@@ -21,6 +22,6 @@ public class Expert {
     @Column(nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "expert")
-    private Set<ExpertTeam> teams;
+    @OneToMany(mappedBy = "expert", fetch = FetchType.LAZY)
+    private List<ExpertTeam> teams;
 }

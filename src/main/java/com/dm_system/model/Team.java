@@ -2,7 +2,8 @@ package com.dm_system.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Set;
+
+import java.util.List;
 
 @Data
 @Entity
@@ -19,6 +20,6 @@ public class Team {
     @JoinColumn(name = "created_by")
     private Expert createdBy;
 
-    @OneToMany(mappedBy = "team")
-    private Set<ExpertTeam> members;
+    @OneToMany(mappedBy = "team", fetch = FetchType.LAZY)
+    private List<ExpertTeam> members;
 }
