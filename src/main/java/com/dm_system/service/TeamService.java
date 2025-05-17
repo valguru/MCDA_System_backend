@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,7 +43,9 @@ public class TeamService {
             ExpertDto createdByDto = new ExpertDto(
                     createdBy.getId(),
                     createdBy.getEmail(),
-                    createdBy.getName()
+                    createdBy.getName(),
+                    createdBy.getSurname(),
+                    createdBy.getPosition()
             );
 
             // Получаем список членов команды
@@ -53,18 +56,63 @@ public class TeamService {
                     .map(expert -> new ExpertDto(
                             expert.getId(),
                             expert.getEmail(),
-                            expert.getName()
+                            expert.getName(),
+                            expert.getSurname(),
+                            expert.getPosition()
                     ))
                     .collect(Collectors.toList());
 
             return new TeamDto(
                     team.getId(),
                     team.getName(),
+                    team.getDescription(),
                     createdByDto,
                     members
             );
         }).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public Optional<TeamDto> getTeamById(Long teamId, Authentication authentication) {
+        String email = authentication.getName();
+
+        Expert currentUser = expertRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Проверяем, входит ли пользователь в команду
+        boolean isMember = expertTeamRepository.existsByTeamIdAndExpertId(teamId, currentUser.getId());
+        if (!isMember) {
+            return Optional.empty(); // не имеет доступа
+        }
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        ExpertDto createdByDto = new ExpertDto(
+                team.getCreatedBy().getId(),
+                team.getCreatedBy().getEmail(),
+                team.getCreatedBy().getName(),
+                team.getCreatedBy().getSurname(),
+                team.getCreatedBy().getPosition()
+        );
+
+        List<ExpertDto> members = expertTeamRepository.findByTeamId(teamId).stream()
+                .map(ExpertTeam::getExpert)
+                .distinct()
+                .map(e -> new ExpertDto(e.getId(), e.getEmail(), e.getName(), e.getSurname(), e.getPosition()))
+                .collect(Collectors.toList());
+
+        TeamDto dto = new TeamDto(
+                team.getId(),
+                team.getName(),
+                team.getDescription(),
+                createdByDto,
+                members
+        );
+
+        return Optional.of(dto);
+    }
+
 
     @Transactional
     public void createTeamWithInvitations(CreateTeamRequest request, Authentication auth) {
@@ -75,6 +123,7 @@ public class TeamService {
         // Создание команды
         Team team = new Team();
         team.setName(request.getName());
+        team.setDescription(request.getDescription());
         team.setCreatedBy(creator);
         team = teamRepository.save(team);
 
@@ -100,6 +149,4 @@ public class TeamService {
             // TODO: отправка email (по желанию)
         }
     }
-
-
 }

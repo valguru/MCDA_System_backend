@@ -4,6 +4,7 @@ import com.dm_system.dto.team.CreateTeamRequest;
 import com.dm_system.dto.team.TeamDto;
 import com.dm_system.service.TeamService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,13 @@ public class TeamController {
     @GetMapping()
     public List<TeamDto> getTeams(Authentication authentication) {
         return teamService.getTeamsForCurrentUser(authentication);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TeamDto> getTeamById(@PathVariable Long id, Authentication authentication) {
+        return teamService.getTeamById(id, authentication)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(403).build());
     }
 
     @PostMapping("/create")
