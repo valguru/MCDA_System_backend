@@ -20,6 +20,9 @@ public class Team {
     @JoinColumn(name = "created_by")
     private Expert createdBy;
 
+    @Column(length = 500)
+    private String description;
+
     @OneToMany(mappedBy = "team", fetch = FetchType.LAZY)
     private List<ExpertTeam> members;
 }

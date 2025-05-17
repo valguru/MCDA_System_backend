@@ -29,8 +29,10 @@ public class AuthService {
 
         Expert expert = new Expert();
         expert.setEmail(request.getEmail());
-        expert.setPassword(passwordEncoder.encode(request.getPassword())); // хэшируем пароль
+        expert.setPassword(passwordEncoder.encode(request.getPassword()));
         expert.setName(request.getName());
+        expert.setSurname(request.getSurname());
+        expert.setPosition(request.getPosition());
         expertRepo.save(expert);
     }
 

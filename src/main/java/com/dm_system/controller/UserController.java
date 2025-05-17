@@ -19,6 +19,12 @@ public class UserController {
         Expert expert = expertRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("Expert not found"));
 
-        return new ExpertDto(expert.getId(), expert.getEmail(), expert.getName());
+        return new ExpertDto(
+                expert.getId(),
+                expert.getEmail(),
+                expert.getName(),
+                expert.getSurname(),
+                expert.getPosition()
+        );
     }
 }

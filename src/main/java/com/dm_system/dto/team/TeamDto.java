@@ -11,6 +11,7 @@ import java.util.List;
 public class TeamDto {
     private Long id;
     private String name;
+    private String description;
     private ExpertDto createdBy;
     private List<ExpertDto> members;
 }

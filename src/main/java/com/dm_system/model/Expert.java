@@ -22,6 +22,12 @@ public class Expert {
     @Column(nullable = false)
     private String name;
 
+    @Column
+    private String surname;
+
+    @Column
+    private String position;
+
     @OneToMany(mappedBy = "expert", fetch = FetchType.LAZY)
     private List<ExpertTeam> teams;
 }
