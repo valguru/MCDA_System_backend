@@ -2,6 +2,8 @@ package com.dm_system.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
@@ -30,5 +32,12 @@ public class Question {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
     private Set<Alternative> alternatives;
-}
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private QuestionStatus status = QuestionStatus.ACTIVE;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+}

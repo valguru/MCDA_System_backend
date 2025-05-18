@@ -14,4 +14,11 @@ public class TeamDto {
     private String description;
     private ExpertDto createdBy;
     private List<ExpertDto> members;
+
+    @Data
+    @AllArgsConstructor
+    public static class SimpleTeamDto {
+        private Long id;
+        private String name;
+    }
 }
