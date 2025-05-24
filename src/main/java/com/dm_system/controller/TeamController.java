@@ -14,7 +14,6 @@ import java.util.List;
 @RequestMapping("/api/teams")
 @RequiredArgsConstructor
 public class TeamController {
-
     private final TeamService teamService;
 
     @GetMapping()
@@ -33,5 +32,4 @@ public class TeamController {
     public void createTeam(@RequestBody CreateTeamRequest request, Authentication authentication) {
         teamService.createTeamWithInvitations(request, authentication);
     }
-
 }

@@ -1,17 +1,22 @@
 package com.dm_system.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-@Data
 @Entity
 @Table(name = "question")
+@Getter
+@Setter
+@ToString(exclude = {"criteria", "alternatives", "team", "createdBy"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Question {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)

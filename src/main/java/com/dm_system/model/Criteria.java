@@ -1,14 +1,19 @@
 package com.dm_system.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
-@Data
 @Entity
 @Table(name = "criteria")
+@Getter
+@Setter
+@ToString(exclude = "question")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Criteria {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)
@@ -25,18 +30,4 @@ public class Criteria {
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
-}
-
-// Enum для типов шкал
-enum ScaleType {
-    SHORT,    // Н, С, В
-    BASE,     // ОН, Н, С, В, ОВ
-    LONG,     // ЭН, ОН, Н, С, В, ОВ, ЭВ
-    NUMERIC   // 1-10
-}
-
-// Enum для направления оптимизации
-enum OptimizationDirection {
-    MIN,      // Минимизация значения (чем меньше - тем лучше)
-    MAX       // Максимизация значения (чем больше - тем лучше)
 }

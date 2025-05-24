@@ -1,15 +1,21 @@
 package com.dm_system.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.util.Set;
 
-@Data
 @Entity
 @Table(name = "alternative")
+@Getter
+@Setter
+@ToString(exclude = {"question", "ratings"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Alternative {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false)

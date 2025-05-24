@@ -1,5 +1,6 @@
 package com.dm_system.controller;
 
+import com.dm_system.dto.question.CreateQuestionRequest;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.service.QuestionService;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,17 @@ public class QuestionController {
             @RequestParam(defaultValue = "ALL") String status,
             Principal principal
     ) {
-        // principal.getName() возвращает email текущего аутентифицированного пользователя
         List<QuestionDto> result = questionService.getQuestionsByTeam(teamId, status, principal.getName());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/create")
+    public ResponseEntity<Void> createQuestion(
+            @PathVariable Long teamId,
+            @RequestBody CreateQuestionRequest request,
+            Principal principal
+    ) {
+        questionService.createQuestion(teamId, request, principal.getName());
+        return ResponseEntity.ok().build();
     }
 }
