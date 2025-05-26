@@ -2,6 +2,7 @@ package com.dm_system.service;
 
 import com.dm_system.dto.expert.ExpertDto;
 import com.dm_system.dto.question.CreateQuestionRequest;
+import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.dto.team.TeamDto.SimpleTeamDto;
 import com.dm_system.model.*;
@@ -28,28 +29,64 @@ public class QuestionService {
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByTeam(Long teamId, String statusStr, String expertEmail) {
-        // Получаем текущего эксперта по email
         Expert expert = expertRepository.findByEmail(expertEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
-        // Проверяем, состоит ли эксперт в команде
         boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
         if (!hasAccess) {
             throw new AccessDeniedException("У вас нет доступа к этой команде");
         }
 
-        // Получаем статус (или null, если "ALL")
         QuestionStatus status = parseStatus(statusStr);
 
-        // Получаем список вопросов по статусу
         List<Question> questions = (status != null)
                 ? questionRepository.findByTeamIdAndStatus(teamId, status)
                 : questionRepository.findByTeamId(teamId);
 
-        // Преобразуем в DTO
         return questions.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionDetailsDto getQuestionDetailsById(Long teamId, Long questionId, String expertEmail) {
+        Expert expert = expertRepository.findByEmail(expertEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new AccessDeniedException("Нет доступа к команде");
+        }
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new IllegalArgumentException("Вопрос не найден"));
+
+        if (!question.getTeam().getId().equals(teamId)) {
+            throw new AccessDeniedException("Вопрос не принадлежит команде");
+        }
+
+        List<QuestionDetailsDto.CriterionDto> criteriaDtos = question.getCriteria().stream().map(c -> {
+            return new QuestionDetailsDto.CriterionDto(
+                    c.getName(),
+                    c.getScale().name(),
+                    c.getOptimizationDirection().name()
+            );
+        }).toList();
+
+        List<String> alternativeTitles = question.getAlternatives().stream()
+                .map(Alternative::getTitle)
+                .toList();
+
+        return new QuestionDetailsDto(
+                question.getId(),
+                question.getTitle(),
+                question.getDescription(),
+                alternativeTitles,
+                criteriaDtos,
+                question.getStatus().name(),
+                question.getCreatedAt(),
+                mapExpertToDto(question.getCreatedBy())
+        );
     }
 
     @Transactional
@@ -62,7 +99,6 @@ public class QuestionService {
             throw new AccessDeniedException("Нет доступа к команде");
         }
 
-        // Загружаем команду из базы
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new IllegalArgumentException("Команда не найдена"));
 
@@ -71,24 +107,24 @@ public class QuestionService {
         question.setDescription(request.getDescription());
         question.setTeam(team);
         question.setCreatedBy(creator);
-        question.setStatus(QuestionStatus.ACTIVE);
+        question.setStatus(QuestionStatus.DRAFT); // Статус черновика
 
-        var alternatives = request.getAlternatives().stream().map(title -> {
+        List<Alternative> alternatives = request.getAlternatives().stream().map(title -> {
             Alternative alt = new Alternative();
             alt.setTitle(title);
             alt.setQuestion(question);
             return alt;
-        }).collect(Collectors.toSet());
+        }).collect(Collectors.toList());
         question.setAlternatives(alternatives);
 
-        var criteria = request.getCriteria().stream().map(c -> {
+        List<Criteria> criteria = request.getCriteria().stream().map(c -> {
             Criteria crit = new Criteria();
             crit.setName(c.getName());
             crit.setScale(ScaleType.valueOf(c.getScaleType().toUpperCase()));
             crit.setOptimizationDirection(OptimizationDirection.valueOf(c.getOptimization().toUpperCase()));
             crit.setQuestion(question);
             return crit;
-        }).collect(Collectors.toSet());
+        }).collect(Collectors.toList());
         question.setCriteria(criteria);
 
         questionRepository.save(question);

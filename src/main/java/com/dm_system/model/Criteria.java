@@ -24,7 +24,7 @@ public class Criteria {
     private ScaleType scale;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "optimization_direction", nullable = false)
+    @Column(nullable = false)
     private OptimizationDirection optimizationDirection;
 
     @ManyToOne

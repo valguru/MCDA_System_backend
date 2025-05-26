@@ -4,7 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "question")
@@ -32,15 +33,15 @@ public class Question {
     @JoinColumn(name = "created_by")
     private Expert createdBy;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
-    private Set<Criteria> criteria;
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Criteria> criteria = new ArrayList<>();
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
-    private Set<Alternative> alternatives;
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Alternative> alternatives = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private QuestionStatus status = QuestionStatus.ACTIVE;
+    private QuestionStatus status = QuestionStatus.DRAFT;
 
     @CreationTimestamp
     @Column(updatable = false)

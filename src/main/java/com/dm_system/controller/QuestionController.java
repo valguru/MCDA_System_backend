@@ -1,6 +1,7 @@
 package com.dm_system.controller;
 
 import com.dm_system.dto.question.CreateQuestionRequest;
+import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.service.QuestionService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,16 @@ public class QuestionController {
     ) {
         List<QuestionDto> result = questionService.getQuestionsByTeam(teamId, status, principal.getName());
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{questionId}")
+    public ResponseEntity<QuestionDetailsDto> getQuestionDetails(
+            @PathVariable Long teamId,
+            @PathVariable Long questionId,
+            Principal principal
+    ) {
+        QuestionDetailsDto dto = questionService.getQuestionDetailsById(teamId, questionId, principal.getName());
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/create")
