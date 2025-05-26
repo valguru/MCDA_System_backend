@@ -5,13 +5,14 @@ import com.dm_system.dto.question.CreateQuestionRequest;
 import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.dto.team.TeamDto.SimpleTeamDto;
+import com.dm_system.exceptions.ForbiddenAccessException;
+import com.dm_system.exceptions.ResourceNotFoundException;
 import com.dm_system.model.*;
 import com.dm_system.repository.ExpertRepository;
 import com.dm_system.repository.ExpertTeamRepository;
 import com.dm_system.repository.QuestionRepository;
 import com.dm_system.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,18 +31,26 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByTeam(Long teamId, String statusStr, String expertEmail) {
         Expert expert = expertRepository.findByEmail(expertEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
 
         boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
         if (!hasAccess) {
-            throw new AccessDeniedException("У вас нет доступа к этой команде");
+            throw new ForbiddenAccessException("У вас нет доступа к этой команде");
         }
 
         QuestionStatus status = parseStatus(statusStr);
 
-        List<Question> questions = (status != null)
-                ? questionRepository.findByTeamIdAndStatus(teamId, status)
-                : questionRepository.findByTeamId(teamId);
+        List<Question> questions;
+        if (status == QuestionStatus.DRAFT) {
+            questions = questionRepository.findByTeamIdAndStatusAndCreatedById(teamId, QuestionStatus.DRAFT, expert.getId());
+        } else if (status != null) {
+            questions = questionRepository.findByTeamIdAndStatus(teamId, status);
+        } else {
+            questions = questionRepository.findByTeamId(teamId)
+                    .stream()
+                    .filter(q -> q.getStatus() != QuestionStatus.DRAFT || q.getCreatedBy().getId().equals(expert.getId()))
+                    .collect(Collectors.toList());
+        }
 
         return questions.stream()
                 .map(this::mapToDto)
@@ -51,27 +60,32 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public QuestionDetailsDto getQuestionDetailsById(Long teamId, Long questionId, String expertEmail) {
         Expert expert = expertRepository.findByEmail(expertEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
 
         boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
         if (!hasAccess) {
-            throw new AccessDeniedException("Нет доступа к команде");
+            throw new ForbiddenAccessException("Нет доступа к команде");
         }
 
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("Вопрос не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
 
         if (!question.getTeam().getId().equals(teamId)) {
-            throw new AccessDeniedException("Вопрос не принадлежит команде");
+            throw new ForbiddenAccessException("Вопрос не принадлежит команде");
         }
 
-        List<QuestionDetailsDto.CriterionDto> criteriaDtos = question.getCriteria().stream().map(c -> {
-            return new QuestionDetailsDto.CriterionDto(
-                    c.getName(),
-                    c.getScale().name(),
-                    c.getOptimizationDirection().name()
-            );
-        }).toList();
+        if (question.getStatus() == QuestionStatus.DRAFT &&
+                !question.getCreatedBy().getId().equals(expert.getId())) {
+            throw new ForbiddenAccessException("Нет доступа к черновику. Его может просматривать только автор.");
+        }
+
+        List<QuestionDetailsDto.CriterionDto> criteriaDtos = question.getCriteria().stream().map(c ->
+                new QuestionDetailsDto.CriterionDto(
+                        c.getName(),
+                        c.getScale().name(),
+                        c.getOptimizationDirection().name()
+                )
+        ).toList();
 
         List<String> alternativeTitles = question.getAlternatives().stream()
                 .map(Alternative::getTitle)
@@ -92,22 +106,22 @@ public class QuestionService {
     @Transactional
     public void createQuestion(Long teamId, CreateQuestionRequest request, String creatorEmail) {
         Expert creator = expertRepository.findByEmail(creatorEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
 
         boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, creator.getId());
         if (!hasAccess) {
-            throw new AccessDeniedException("Нет доступа к команде");
+            throw new ForbiddenAccessException("Нет доступа к команде");
         }
 
         Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new IllegalArgumentException("Команда не найдена"));
+                .orElseThrow(() -> new ResourceNotFoundException("Команда не найдена"));
 
         Question question = new Question();
         question.setTitle(request.getTitle());
         question.setDescription(request.getDescription());
         question.setTeam(team);
         question.setCreatedBy(creator);
-        question.setStatus(QuestionStatus.DRAFT); // Статус черновика
+        question.setStatus(QuestionStatus.DRAFT);
 
         List<Alternative> alternatives = request.getAlternatives().stream().map(title -> {
             Alternative alt = new Alternative();

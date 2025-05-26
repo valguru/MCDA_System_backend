@@ -11,5 +11,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query("SELECT q FROM Question q WHERE q.team.id = :teamId AND (:status IS NULL OR q.status = :status)")
     List<Question> findByTeamIdAndStatus(Long teamId, QuestionStatus status);
+    List<Question> findByTeamIdAndStatusAndCreatedById(Long teamId, QuestionStatus status, Long createdById);
     List<Question> findByTeamId(Long teamId);
 }
