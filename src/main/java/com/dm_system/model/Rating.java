@@ -24,7 +24,7 @@ public class Rating {
     private Criteria criteria;
 
     @ManyToOne
-    @JoinColumn(name = "question_id", nullable = false)  // Добавлено
+    @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
     @Column(nullable = false)

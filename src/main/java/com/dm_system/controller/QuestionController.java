@@ -1,6 +1,7 @@
 package com.dm_system.controller;
 
 import com.dm_system.dto.question.CreateQuestionRequest;
+import com.dm_system.dto.question.ParticipantsResponse;
 import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.service.QuestionService;
@@ -59,4 +60,15 @@ public class QuestionController {
         Map<String, String> response = Map.of("message", "Вопрос успешно активирован");
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{questionId}/participants")
+    public ResponseEntity<ParticipantsResponse> getParticipants(
+            @PathVariable Long teamId,
+            @PathVariable Long questionId,
+            Principal principal
+    ) {
+        ParticipantsResponse participants = questionService.getParticipants(questionId, principal.getName());
+        return ResponseEntity.ok(participants);
+    }
+
 }

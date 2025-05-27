@@ -2,20 +2,19 @@ package com.dm_system.service;
 
 import com.dm_system.dto.expert.ExpertDto;
 import com.dm_system.dto.question.CreateQuestionRequest;
+import com.dm_system.dto.question.ParticipantsResponse;
 import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.dto.team.TeamDto.SimpleTeamDto;
 import com.dm_system.exceptions.ForbiddenAccessException;
 import com.dm_system.exceptions.ResourceNotFoundException;
 import com.dm_system.model.*;
-import com.dm_system.repository.ExpertRepository;
-import com.dm_system.repository.ExpertTeamRepository;
-import com.dm_system.repository.QuestionRepository;
-import com.dm_system.repository.TeamRepository;
+import com.dm_system.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +26,7 @@ public class QuestionService {
     private final ExpertTeamRepository expertTeamRepository;
     private final ExpertRepository expertRepository;
     private final TeamRepository teamRepository;
+    private final RatingRepository ratingRepository;
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByTeam(Long teamId, String statusStr, String expertEmail) {
@@ -170,6 +170,47 @@ public class QuestionService {
 
         question.setStatus(QuestionStatus.ACTIVE);
         questionRepository.save(question);
+    }
+
+    @Transactional(readOnly = true)
+    public ParticipantsResponse getParticipants(Long questionId, String currentUserEmail) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос с ID " + questionId + " не найден"));
+
+        Long teamId = question.getTeam().getId();
+
+        Expert currentExpert = expertRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь с email " + currentUserEmail + " не найден"));
+
+        boolean isMemberOfTeam = expertTeamRepository.existsByTeamIdAndExpertId(teamId, currentExpert.getId());
+        if (!isMemberOfTeam) {
+            throw new ForbiddenAccessException("Вы не состоите в команде, к которой относится данный вопрос");
+        }
+
+        List<Expert> teamExperts = expertTeamRepository.findExpertsByTeamId(teamId);
+
+        List<Long> respondedExpertIds = ratingRepository.findDistinctExpertIdsByQuestionId(questionId);
+
+        List<ExpertDto> responded = new ArrayList<>();
+        List<ExpertDto> pending = new ArrayList<>();
+
+        for (Expert expert : teamExperts) {
+            ExpertDto dto = new ExpertDto(
+                    expert.getId(),
+                    expert.getEmail(),
+                    expert.getName(),
+                    expert.getSurname(),
+                    expert.getPosition()
+            );
+
+            if (respondedExpertIds.contains(expert.getId())) {
+                responded.add(dto);
+            } else {
+                pending.add(dto);
+            }
+        }
+
+        return new ParticipantsResponse(responded, pending);
     }
 
     private QuestionStatus parseStatus(String statusStr) {
