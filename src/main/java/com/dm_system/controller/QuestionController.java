@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teams/{teamId}/questions")
@@ -46,5 +47,16 @@ public class QuestionController {
     ) {
         questionService.createQuestion(teamId, request, principal.getName());
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{questionId}/activate")
+    public ResponseEntity<Map<String, String>> activateQuestion(
+            @PathVariable Long teamId,
+            @PathVariable Long questionId,
+            Principal principal
+    ) {
+        questionService.activateQuestion(teamId, questionId, principal.getName());
+        Map<String, String> response = Map.of("message", "Вопрос успешно активирован");
+        return ResponseEntity.ok(response);
     }
 }

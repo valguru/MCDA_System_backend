@@ -144,6 +144,34 @@ public class QuestionService {
         questionRepository.save(question);
     }
 
+    @Transactional
+    public void activateQuestion(Long teamId, Long questionId, String expertEmail) {
+        Expert expert = expertRepository.findByEmail(expertEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
+
+        if (!question.getTeam().getId().equals(teamId)) {
+            throw new ForbiddenAccessException("Вопрос не принадлежит команде");
+        }
+
+        if (question.getStatus() != QuestionStatus.DRAFT) {
+            throw new IllegalStateException("Можно активировать только вопрос в статусе DRAFT");
+        }
+
+        if (!question.getCreatedBy().getId().equals(expert.getId())) {
+            throw new ForbiddenAccessException("Только автор может активировать вопрос");
+        }
+
+        if (question.getAlternatives().isEmpty() || question.getCriteria().isEmpty()) {
+            throw new IllegalStateException("Нельзя активировать вопрос без альтернатив и критериев");
+        }
+
+        question.setStatus(QuestionStatus.ACTIVE);
+        questionRepository.save(question);
+    }
+
     private QuestionStatus parseStatus(String statusStr) {
         if (statusStr == null || statusStr.equalsIgnoreCase("ALL")) {
             return null;
