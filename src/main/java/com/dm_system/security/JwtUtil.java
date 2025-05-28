@@ -2,6 +2,7 @@ package com.dm_system.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +10,9 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private final String secret = "very_secret_key"; // Лучше потом в application.properties
+    @Value("${jwt.secret}")
+    private String secret;
+
     private final long expirationMs = 86400000; // 1 день
 
     public String generateToken(String email) {
