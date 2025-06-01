@@ -5,7 +5,8 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class CreateQuestionRequest {
+public class QuestionCreateRequest {
+    private Long teamId;
     private String title;
     private String description;
     private List<String> alternatives;

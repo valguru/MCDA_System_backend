@@ -1,8 +1,8 @@
 package com.dm_system.service;
 
 import com.dm_system.dto.expert.ExpertDto;
-import com.dm_system.dto.question.CreateQuestionRequest;
-import com.dm_system.dto.question.ParticipantsResponse;
+import com.dm_system.dto.question.QuestionCreateRequest;
+import com.dm_system.dto.question.QuestionParticipantsResponse;
 import com.dm_system.dto.question.QuestionDetailsDto;
 import com.dm_system.dto.question.QuestionDto;
 import com.dm_system.dto.team.TeamDto.SimpleTeamDto;
@@ -58,20 +58,18 @@ public class QuestionService {
     }
 
     @Transactional(readOnly = true)
-    public QuestionDetailsDto getQuestionDetailsById(Long teamId, Long questionId, String expertEmail) {
+    public QuestionDetailsDto getQuestionDetails(Long questionId, String expertEmail) {
         Expert expert = expertRepository.findByEmail(expertEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
-
-        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
-        if (!hasAccess) {
-            throw new ForbiddenAccessException("Нет доступа к команде");
-        }
 
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
 
-        if (!question.getTeam().getId().equals(teamId)) {
-            throw new ForbiddenAccessException("Вопрос не принадлежит команде");
+        Long teamId = question.getTeam().getId();
+
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Нет доступа к команде");
         }
 
         if (question.getStatus() == QuestionStatus.DRAFT &&
@@ -104,16 +102,16 @@ public class QuestionService {
     }
 
     @Transactional
-    public void createQuestion(Long teamId, CreateQuestionRequest request, String creatorEmail) {
+    public Long createQuestion(QuestionCreateRequest request, String creatorEmail) {
         Expert creator = expertRepository.findByEmail(creatorEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
 
-        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, creator.getId());
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(request.getTeamId(), creator.getId());
         if (!hasAccess) {
             throw new ForbiddenAccessException("Нет доступа к команде");
         }
 
-        Team team = teamRepository.findById(teamId)
+        Team team = teamRepository.findById(request.getTeamId())
                 .orElseThrow(() -> new ResourceNotFoundException("Команда не найдена"));
 
         Question question = new Question();
@@ -142,22 +140,25 @@ public class QuestionService {
         question.setCriteria(criteria);
 
         questionRepository.save(question);
+        return question.getId();
     }
 
     @Transactional
-    public void activateQuestion(Long teamId, Long questionId, String expertEmail) {
+    public void activateQuestion(Long questionId, String expertEmail) {
         Expert expert = expertRepository.findByEmail(expertEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
 
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
 
-        if (!question.getTeam().getId().equals(teamId)) {
-            throw new ForbiddenAccessException("Вопрос не принадлежит команде");
+        Long teamId = question.getTeam().getId();
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Нет доступа к команде вопроса");
         }
 
         if (question.getStatus() != QuestionStatus.DRAFT) {
-            throw new IllegalStateException("Можно активировать только вопрос в статусе DRAFT");
+            throw new ForbiddenAccessException("Можно активировать только вопрос в статусе DRAFT");
         }
 
         if (!question.getCreatedBy().getId().equals(expert.getId())) {
@@ -165,7 +166,7 @@ public class QuestionService {
         }
 
         if (question.getAlternatives().isEmpty() || question.getCriteria().isEmpty()) {
-            throw new IllegalStateException("Нельзя активировать вопрос без альтернатив и критериев");
+            throw new ForbiddenAccessException("Нельзя активировать вопрос без альтернатив и критериев");
         }
 
         question.setStatus(QuestionStatus.ACTIVE);
@@ -173,7 +174,7 @@ public class QuestionService {
     }
 
     @Transactional(readOnly = true)
-    public ParticipantsResponse getParticipants(Long questionId, String currentUserEmail) {
+    public QuestionParticipantsResponse getParticipants(Long questionId, String currentUserEmail) {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Вопрос с ID " + questionId + " не найден"));
 
@@ -210,7 +211,7 @@ public class QuestionService {
             }
         }
 
-        return new ParticipantsResponse(responded, pending);
+        return new QuestionParticipantsResponse(responded, pending);
     }
 
     private QuestionStatus parseStatus(String statusStr) {

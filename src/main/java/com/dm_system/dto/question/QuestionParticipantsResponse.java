@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
-public class ParticipantsResponse {
+public class QuestionParticipantsResponse {
     private List<ExpertDto> responded;
     private List<ExpertDto> pending;
 }
