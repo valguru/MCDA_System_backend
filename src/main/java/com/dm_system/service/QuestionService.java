@@ -77,23 +77,27 @@ public class QuestionService {
             throw new ForbiddenAccessException("Нет доступа к черновику. Его может просматривать только автор.");
         }
 
-        List<QuestionDetailsDto.CriterionDto> criteriaDtos = question.getCriteria().stream().map(c ->
-                new QuestionDetailsDto.CriterionDto(
+        List<QuestionDetailsDto.CriterionDto> criteriaDtos = question.getCriteria().stream()
+                .map(c -> new QuestionDetailsDto.CriterionDto(
+                        c.getId(),
                         c.getName(),
                         c.getScale().name(),
                         c.getOptimizationDirection().name()
-                )
-        ).toList();
+                ))
+                .toList();
 
-        List<String> alternativeTitles = question.getAlternatives().stream()
-                .map(Alternative::getTitle)
+        List<QuestionDetailsDto.AlternativeDto> alternativeDtos = question.getAlternatives().stream()
+                .map(a -> new QuestionDetailsDto.AlternativeDto(
+                        a.getId(),
+                        a.getTitle()
+                ))
                 .toList();
 
         return new QuestionDetailsDto(
                 question.getId(),
                 question.getTitle(),
                 question.getDescription(),
-                alternativeTitles,
+                alternativeDtos,
                 criteriaDtos,
                 question.getStatus().name(),
                 question.getCreatedAt(),

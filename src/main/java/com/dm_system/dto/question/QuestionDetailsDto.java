@@ -15,7 +15,7 @@ public class QuestionDetailsDto {
     private Long id;
     private String title;
     private String description;
-    private List<String> alternatives;
+    private List<AlternativeDto> alternatives;
     private List<CriterionDto> criteria;
     private String status;
     private LocalDateTime createdAt;
@@ -24,11 +24,18 @@ public class QuestionDetailsDto {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class AlternativeDto {
+        private Long id;
+        private String value;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CriterionDto {
+        private Long id;
         private String name;
         private String scaleType;
         private String optimization;
     }
 }
-
-
