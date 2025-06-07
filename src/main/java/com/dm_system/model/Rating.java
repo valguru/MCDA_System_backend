@@ -28,5 +28,5 @@ public class Rating {
     private Question question;
 
     @Column(nullable = false)
-    private Integer value;
+    private String value;
 }

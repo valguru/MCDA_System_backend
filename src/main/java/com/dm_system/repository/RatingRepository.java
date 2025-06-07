@@ -10,5 +10,6 @@ import java.util.List;
 public interface RatingRepository extends JpaRepository<Rating, Long> {
     @Query("SELECT DISTINCT r.expert.id FROM Rating r WHERE r.question.id = :questionId")
     List<Long> findDistinctExpertIdsByQuestionId(@Param("questionId") Long questionId);
-
+    boolean existsByExpertIdAndQuestionId(Long expertId, Long questionId);
+    List<Rating> findByExpertIdAndQuestionId(Long expertId, Long questionId);
 }
