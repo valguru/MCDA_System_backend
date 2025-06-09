@@ -28,6 +28,7 @@ public class QuestionService {
     private final ExpertRepository expertRepository;
     private final TeamRepository teamRepository;
     private final RatingRepository ratingRepository;
+    private final AlternativeRepository alternativeRepository;
 
     @Transactional(readOnly = true)
     public Question getQuestionById(Long questionId, String expertEmail) {
@@ -112,7 +113,7 @@ public class QuestionService {
                 ))
                 .toList();
 
-        return new QuestionDetailsDto(
+        QuestionDetailsDto dto = new QuestionDetailsDto(
                 question.getId(),
                 question.getTitle(),
                 question.getDescription(),
@@ -120,8 +121,18 @@ public class QuestionService {
                 criteriaDtos,
                 question.getStatus().name(),
                 question.getCreatedAt(),
-                mapExpertToDto(question.getCreatedBy())
+                mapExpertToDto(question.getCreatedBy()),
+                null
         );
+
+        if (question.getStatus() == QuestionStatus.RESOLVED && question.getSelectedAlternative() != null) {
+            dto.setSelectedAlternative(new AlternativeDto(
+                    question.getSelectedAlternative().getId(),
+                    question.getSelectedAlternative().getTitle() // или getValue(), если поле называется иначе
+            ));
+        }
+
+        return dto;
     }
 
     @Transactional
@@ -256,6 +267,45 @@ public class QuestionService {
         }
 
         question.setStatus(QuestionStatus.AWAITING_DECISION);
+        questionRepository.save(question);
+    }
+
+    @Transactional
+    public void resolveQuestion(Long questionId, Long selectedAlternativeId, String email) {
+        Expert expert = expertRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
+
+        Long teamId = question.getTeam().getId();
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Нет доступа к команде вопроса");
+        }
+
+        if (question.getStatus() != QuestionStatus.AWAITING_DECISION) {
+            throw new ForbiddenAccessException("Можно решить только вопрос в статусе AWAITING_DECISION");
+        }
+
+        if (question.getStatus() == QuestionStatus.RESOLVED) {
+            throw new ForbiddenAccessException("Вопрос уже решён");
+        }
+
+
+        if (!question.getCreatedBy().getId().equals(expert.getId())) {
+            throw new ForbiddenAccessException("Вы не автор этого вопроса");
+        }
+
+        Alternative alternative = alternativeRepository.findById(selectedAlternativeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Альтернатива не найдена"));
+
+        if (!question.getAlternatives().contains(alternative)) {
+            throw new ForbiddenAccessException("Альтернатива не принадлежит вопросу");
+        }
+
+        question.setSelectedAlternative(alternative);
+        question.setStatus(QuestionStatus.RESOLVED);
         questionRepository.save(question);
     }
 

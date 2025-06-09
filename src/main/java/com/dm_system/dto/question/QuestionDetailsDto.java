@@ -21,6 +21,7 @@ public class QuestionDetailsDto {
     private String status;
     private LocalDateTime createdAt;
     private ExpertDto createdBy;
+    private AlternativeDto selectedAlternative;
 
     @Data
     @NoArgsConstructor

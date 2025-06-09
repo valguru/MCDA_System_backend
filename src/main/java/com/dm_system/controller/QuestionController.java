@@ -1,5 +1,6 @@
 package com.dm_system.controller;
 
+import com.dm_system.dto.alternative.AlternativeSelectRequest;
 import com.dm_system.dto.question.*;
 import com.dm_system.service.QuestionService;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +73,15 @@ public class QuestionController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{questionId}/resolve")
+    public ResponseEntity<Map<String, String>> resolveQuestion(
+            @PathVariable Long questionId,
+            @RequestBody AlternativeSelectRequest request,
+            Principal principal
+    ) {
+        questionService.resolveQuestion(questionId, request.getSelectedAlternativeId(), principal.getName());
+        return ResponseEntity.ok(Map.of("message", "Вопрос успешно решён"));
+    }
 
     @GetMapping("/{questionId}/participants")
     public ResponseEntity<QuestionParticipantsResponse> getParticipants(

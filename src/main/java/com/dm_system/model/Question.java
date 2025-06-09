@@ -49,4 +49,8 @@ public class Question {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @ManyToOne
+    @JoinColumn(name = "selected_alternative_id")
+    private Alternative selectedAlternative;
 }
