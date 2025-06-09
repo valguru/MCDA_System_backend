@@ -12,4 +12,5 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
     List<Long> findDistinctExpertIdsByQuestionId(@Param("questionId") Long questionId);
     boolean existsByExpertIdAndQuestionId(Long expertId, Long questionId);
     List<Rating> findByExpertIdAndQuestionId(Long expertId, Long questionId);
+    List<Rating> findAllByQuestionId(Long questionId);
 }

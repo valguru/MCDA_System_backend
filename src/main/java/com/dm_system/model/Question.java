@@ -13,6 +13,9 @@ import java.util.List;
 @Setter
 @ToString(exclude = {"criteria", "alternatives", "team", "createdBy"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Question {
 
     @Id

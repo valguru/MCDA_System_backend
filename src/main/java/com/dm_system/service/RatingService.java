@@ -21,6 +21,24 @@ public class RatingService {
     private final AlternativeRepository alternativeRepository;
     private final CriteriaRepository criteriaRepository;
     private final ExpertTeamRepository expertTeamRepository;
+    private final ExpertRepository expertRepository;
+
+    public List<Rating> getRatingsByQuestionId(Long questionId, String expertEmail) {
+        Expert expert = expertRepository.findByEmail(expertEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
+
+        Long teamId = question.getTeam().getId();
+
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Вы не состоите в команде, к которой относится вопрос");
+        }
+
+        return ratingRepository.findAllByQuestionId(questionId);
+    }
 
     public void submitRatings(RatingCreateRequest request, Expert expert) {
         Long questionId = request.getQuestionId();

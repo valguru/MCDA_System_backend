@@ -1,5 +1,6 @@
 package com.dm_system.service;
 
+import com.dm_system.dto.alternative.AlternativeDto;
 import com.dm_system.dto.expert.ExpertDto;
 import com.dm_system.dto.question.QuestionCreateRequest;
 import com.dm_system.dto.question.QuestionParticipantsResponse;
@@ -27,6 +28,24 @@ public class QuestionService {
     private final ExpertRepository expertRepository;
     private final TeamRepository teamRepository;
     private final RatingRepository ratingRepository;
+
+    @Transactional(readOnly = true)
+    public Question getQuestionById(Long questionId, String expertEmail) {
+        Expert expert = expertRepository.findByEmail(expertEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
+
+        Long teamId = question.getTeam().getId();
+
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Вы не состоите в команде, к которой относится вопрос");
+        }
+
+        return question;
+    }
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByTeam(Long teamId, String statusStr, String expertEmail) {
@@ -86,8 +105,8 @@ public class QuestionService {
                 ))
                 .toList();
 
-        List<QuestionDetailsDto.AlternativeDto> alternativeDtos = question.getAlternatives().stream()
-                .map(a -> new QuestionDetailsDto.AlternativeDto(
+        List<AlternativeDto> alternativeDtos = question.getAlternatives().stream()
+                .map(a -> new AlternativeDto(
                         a.getId(),
                         a.getTitle()
                 ))

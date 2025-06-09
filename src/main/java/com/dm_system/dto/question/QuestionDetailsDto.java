@@ -1,5 +1,6 @@
 package com.dm_system.dto.question;
 
+import com.dm_system.dto.alternative.AlternativeDto;
 import com.dm_system.dto.expert.ExpertDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,14 +21,6 @@ public class QuestionDetailsDto {
     private String status;
     private LocalDateTime createdAt;
     private ExpertDto createdBy;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class AlternativeDto {
-        private Long id;
-        private String value;
-    }
 
     @Data
     @NoArgsConstructor
