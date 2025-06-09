@@ -62,6 +62,17 @@ public class QuestionController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{questionId}/await_decision")
+    public ResponseEntity<Map<String, String>> markAwaitingDecision(
+            @PathVariable Long questionId,
+            Principal principal
+    ) {
+        questionService.markAwaitingDecision(questionId, principal.getName());
+        Map<String, String> response = Map.of("message", "Вопрос переведен в статус AWAITING_DECISION");
+        return ResponseEntity.ok(response);
+    }
+
+
     @GetMapping("/{questionId}/participants")
     public ResponseEntity<QuestionParticipantsResponse> getParticipants(
             @PathVariable Long questionId,

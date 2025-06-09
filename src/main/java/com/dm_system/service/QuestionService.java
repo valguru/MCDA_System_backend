@@ -237,6 +237,28 @@ public class QuestionService {
         return new QuestionParticipantsResponse(responded, pending);
     }
 
+    @Transactional
+    public void markAwaitingDecision(Long questionId, String expertEmail) {
+        Expert expert = expertRepository.findByEmail(expertEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Пользователь не найден"));
+
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Вопрос не найден"));
+
+        Long teamId = question.getTeam().getId();
+        boolean hasAccess = expertTeamRepository.existsByTeamIdAndExpertId(teamId, expert.getId());
+        if (!hasAccess) {
+            throw new ForbiddenAccessException("Нет доступа к команде вопроса");
+        }
+
+        if (!question.getStatus().equals(QuestionStatus.ACTIVE)) {
+            throw new ForbiddenAccessException("Вопрос должен быть в статусе ACTIVE, чтобы перевести его в AWAITING_DECISION");
+        }
+
+        question.setStatus(QuestionStatus.AWAITING_DECISION);
+        questionRepository.save(question);
+    }
+
     private QuestionStatus parseStatus(String statusStr) {
         if (statusStr == null || statusStr.equalsIgnoreCase("ALL")) {
             return null;
